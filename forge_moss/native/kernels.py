@@ -23,6 +23,26 @@ try:
 except ImportError:
     _ck = None
 
+
+def _ck_version():
+    try:
+        from importlib.metadata import version
+
+        return tuple(int(p) for p in version("comfy-kitchen").split(".")[:3])
+    except Exception:
+        return (0,)
+
+
+def _situ_eager(x):
+    hidden, gate = x.chunk(2, -1)
+    return (4.0 * torch.tanh(gate / 4.0) * torch.sigmoid(gate)) * (25.0 * torch.tanh(hidden / 25.0))
+
+
+# Forge Neo registers no SiTU input activation of its own; register it here so the INT8 ConvRot path folds SiTU into
+# comfy-kitchen's activation quantization (0.2.38+) without a patched Forge. Forge reads this dict by name per call
+if _forge_linear_input_act is not None and "situ" not in _forge_input_acts and _ck_version() >= (0, 2, 38):
+    _forge_input_acts["situ"] = _situ_eager
+
 __all__ = ["attention", "cast_to", "linear_situ", "modulated_rms_norm", "norm_rope"]
 
 

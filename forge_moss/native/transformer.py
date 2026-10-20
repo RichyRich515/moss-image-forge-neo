@@ -89,6 +89,11 @@ class RMSNorm(nn.Module):
         return y.to(x.dtype) * kernels.cast_to(self.weight, x.dtype, x.device)
 
 
+def head_norm(norm, x, heads):
+    # unused by the fused path (kernels.norm_rope); kept for NegPiP, whose block forward checks for and calls it
+    return norm(x.unflatten(-1, (heads, -1))).flatten(2)
+
+
 class TextBlock(nn.Module):
     """Text refinement: pre-norm attention and SiTU MLP, no modulation, biases on every projection."""
 
